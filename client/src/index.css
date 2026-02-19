@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+
+body {
+  @apply bg-netflix-black text-white antialiased;
+  font-family: 'Source Sans 3', Helvetica Neue, sans-serif;
+}
+
+/* Custom scrollbar for horizontal rows */
+.scroll-row::-webkit-scrollbar {
+  height: 6px;
+}
+.scroll-row::-webkit-scrollbar-track {
+  @apply bg-netflix-black/50;
+}
+.scroll-row::-webkit-scrollbar-thumb {
+  @apply bg-netflix-red rounded-full;
+}
+
+/* Smooth focus for accessibility */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-netflix-red;
+}
