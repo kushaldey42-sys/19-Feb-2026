@@ -7,6 +7,7 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import moviesRoutes from './routes/movies.js';
 import favoritesRoutes from './routes/favorites.js';
+import watchmodeRoutes from './routes/watchmode.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/movies', moviesRoutes);
 app.use('/api/favorites', favoritesRoutes);
+app.use('/api/watchmode', watchmodeRoutes);
 
 // Health check - includes MongoDB connection status
 app.get('/api/health', (req, res) => {

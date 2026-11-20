@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const API_BASE = '/api';
 
 export async function searchMovies(query, page = 1) {
@@ -14,6 +16,28 @@ export async function getMovieById(id) {
     throw new Error('Failed to load movie');
   }
   return res.json();
+}
+
+export async function getTrailerByTitle(title) {
+  const params = new URLSearchParams({ title: title.trim() });
+  const res = await fetch(`${API_BASE}/movies/trailer?${params}`, { credentials: 'include' });
+  if (!res.ok) {
+    throw new Error('Failed to load trailer');
+  }
+  return res.json();
+}
+
+export async function getWatchmodeByTitle(title, year = '') {
+  const normalizedTitle = title?.trim();
+  if (!normalizedTitle) {
+    throw new Error('Title is required');
+  }
+
+  const response = await axios.get(`${API_BASE}/watchmode/${encodeURIComponent(normalizedTitle)}`, {
+    withCredentials: true,
+    params: year ? { year } : {},
+  });
+  return response.data;
 }
 
 export async function getFavorites() {

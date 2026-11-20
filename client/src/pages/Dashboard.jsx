@@ -1,37 +1,66 @@
 import { useState, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
-import { searchMovies } from '../api/movies';
+import { getTrailerByTitle, searchMovies } from '../api/movies';
 import MovieRow from '../components/MovieRow';
 import Spinner from '../components/Spinner';
+import TrailerModal from '../components/TrailerModal';
 
 const HERO_PLACEHOLDER = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920&q=80';
+const HOME_ROW_CONFIG = [
+  { id: 'trending', title: 'Trending Now', query: 'batman' },
+  { id: 'action', title: 'Action Hits', query: 'mission impossible' },
+  { id: 'scifi', title: 'Sci-Fi Picks', query: 'star wars' },
+  { id: 'comedy', title: 'Comedy Night', query: 'comedy' },
+  { id: 'family', title: 'Family Watch', query: 'disney' },
+  { id: 'classic', title: 'Classic Favorites', query: 'godfather' },
+];
+
+function getInitialHomeRows() {
+  return HOME_ROW_CONFIG.map((row) => ({
+    ...row,
+    movies: [],
+    loading: true,
+  }));
+}
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [trending, setTrending] = useState([]);
+  const [homeRows, setHomeRows] = useState(() => getInitialHomeRows());
   const [searchResults, setSearchResults] = useState([]);
   const [searchPage, setSearchPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
-  const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [movieTitle, setMovieTitle] = useState('');
+  const [trailerData, setTrailerData] = useState(null);
+  const [loadingTrailer, setLoadingTrailer] = useState(false);
+  const [trailerError, setTrailerError] = useState('');
 
   const debouncedSearch = useDebounce(searchQuery, 400);
 
-  // Initial trending (batman as default)
+  // Initial curated home rows
   useEffect(() => {
     let cancelled = false;
-    setLoadingTrending(true);
-    searchMovies('batman', 1)
-      .then((data) => {
-        if (!cancelled && data.Search) setTrending(data.Search);
-      })
-      .catch(() => {
-        if (!cancelled) setTrending([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingTrending(false);
+    setHomeRows(getInitialHomeRows());
+
+    HOME_ROW_CONFIG.forEach((row) => {
+      searchMovies(row.query, 1)
+        .then((data) => {
+          if (cancelled) return;
+          const movies = data?.Response === 'False' ? [] : (data.Search || []);
+          setHomeRows((prev) => prev.map((item) => (
+            item.id === row.id ? { ...item, movies, loading: false } : item
+          )));
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setHomeRows((prev) => prev.map((item) => (
+            item.id === row.id ? { ...item, movies: [], loading: false } : item
+          )));
+        });
       });
+
     return () => { cancelled = true; };
   }, []);
 
@@ -89,6 +118,40 @@ export default function Dashboard() {
   const totalPages = totalResults ? Math.ceil(totalResults / 10) : 0;
   const hasMore = searchPage < totalPages && searchResults.length < totalResults;
 
+  const closeTrailer = () => {
+    setShowTrailer(false);
+    setLoadingTrailer(false);
+    setTrailerError('');
+    setTrailerData(null);
+    setMovieTitle('');
+  };
+
+  const openTrailer = async (title) => {
+    const cleanTitle = title?.trim();
+    if (!cleanTitle) return;
+
+    setMovieTitle(cleanTitle);
+    setShowTrailer(true);
+    setLoadingTrailer(true);
+    setTrailerError('');
+    setTrailerData(null);
+
+    try {
+      const data = await getTrailerByTitle(cleanTitle);
+      setTrailerData(data);
+    } catch {
+      setTrailerError('Could not load trailer right now.');
+      setTrailerData({
+        found: false,
+        videoId: null,
+        embedUrl: null,
+        searchUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${cleanTitle} official trailer`)}`,
+      });
+    } finally {
+      setLoadingTrailer(false);
+    }
+  };
+
   return (
     <div className="pb-12">
       {/* Hero */}
@@ -137,7 +200,7 @@ export default function Dashboard() {
               <p className="text-gray-400 px-4 md:px-8">{searchError}</p>
             ) : searchResults.length > 0 ? (
               <>
-                <MovieRow title="Results" movies={searchResults} />
+                <MovieRow title="Results" movies={searchResults} onPreviewTrailer={openTrailer} />
                 {hasMore && (
                   <div className="flex justify-center px-4 md:px-8">
                     <button
@@ -154,14 +217,26 @@ export default function Dashboard() {
           </>
         ) : (
           <>
-            {loadingTrending ? (
-              <div className="px-4 md:px-8"><Spinner className="py-12" /></div>
-            ) : (
-              <MovieRow title="Trending" movies={trending} />
-            )}
+            {homeRows.map((row) => (
+              <MovieRow
+                key={row.id}
+                title={row.title}
+                movies={row.movies}
+                loading={row.loading}
+                onPreviewTrailer={openTrailer}
+              />
+            ))}
           </>
         )}
       </div>
+      <TrailerModal
+        open={showTrailer}
+        movieTitle={movieTitle}
+        trailerData={trailerData}
+        loading={loadingTrailer}
+        error={trailerError}
+        onClose={closeTrailer}
+      />
     </div>
   );
 }

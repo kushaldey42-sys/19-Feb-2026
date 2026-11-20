@@ -50,6 +50,7 @@ Edit `server/.env`:
 - `MONGODB_URI` – MongoDB connection string (e.g. `mongodb://localhost:27017/netflix-movies` or Atlas URI)
 - `JWT_SECRET` – Strong random string for signing JWTs (change in production)
 - `OMDB_API_KEY` – OMDB API key (default provided: `daaf6ce3`)
+- `YOUTUBE_API_KEY` – YouTube Data API v3 key used for trailer lookup
 - `CLIENT_URL` – Frontend URL (default: `http://localhost:5173`)
 
 ### 2. Client
@@ -98,6 +99,7 @@ Open **http://localhost:5173** in the browser. Sign up, log in, then use the das
 
 - **Auth**: Sign up (full name, email, password with validation), login, logout. JWT in HTTP-only cookie; protected routes.
 - **Dashboard**: Hero section, debounced search, horizontal movie rows, load more (pagination).
+- **Trailer preview**: `Preview Trailer` button on movie cards, autoplay YouTube modal, and fallback search link when no trailer is found.
 - **Movie detail**: Title, year, runtime, rating, plot, director, actors, “Add to My List”.
 - **Favorites**: Stored in MongoDB; view and remove from My List.
 - **UI**: Dark Netflix-style theme (black/red), Tailwind, responsive, basic animations.
@@ -111,6 +113,7 @@ Open **http://localhost:5173** in the browser. Sign up, log in, then use the das
 | POST | `/api/auth/logout` | Logout |
 | GET | `/api/auth/me` | Current user (protected) |
 | GET | `/api/movies/search?q=&page=1` | Search OMDB |
+| GET | `/api/movies/trailer?title=movie+name` | Resolve first YouTube trailer |
 | GET | `/api/movies/:id` | Movie by IMDB ID |
 | GET | `/api/favorites` | User favorites (protected) |
 | POST | `/api/favorites` | Add favorite (protected) |
